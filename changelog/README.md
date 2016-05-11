@@ -2,6 +2,8 @@
 
 ### 3.0.3 (in progress)
 
+- [bug] JAVA-1193: Replica metadata should be refreshed synchronously when schema is altered.
+
 
 ### 3.0.2
 
