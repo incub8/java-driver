@@ -3,6 +3,7 @@
 ### 3.0.3 (in progress)
 
 - [bug] JAVA-1193: Replica metadata should be refreshed synchronously when schema is altered.
+- [bug] JAVA-1120: Consider skipping schema refresh debouncer when checking for agreement as a result of schema change made by client.
 
 
 ### 3.0.2
