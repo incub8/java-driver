@@ -35,6 +35,7 @@ public class MappingConfiguration {
     public static class Builder {
 
         private PropertyMapper propertyMapper = new DefaultPropertyMapper();
+        private ResolvingStrategy resolvingStrategy = new DefaultResolvingStrategy();
 
         /**
          * Sets the {@link PropertyMapper property access strategy} to use.
@@ -48,20 +49,33 @@ public class MappingConfiguration {
         }
 
         /**
+         * Sets the {@link ResolvingStrategy resolving strategy} to use.
+         *
+         * @param resolvingStrategy the {@link ResolvingStrategy resolving strategy} to use.
+         * @return this {@link Builder} instance (to allow for fluent builder pattern).
+         */
+        public Builder withResolvingStrategy(ResolvingStrategy resolvingStrategy) {
+            this.resolvingStrategy = resolvingStrategy;
+            return this;
+        }
+
+        /**
          * Builds a new instance of {@link MappingConfiguration} with this builder's
          * settings.
          *
          * @return a new instance of {@link MappingConfiguration}
          */
         public MappingConfiguration build() {
-            return new MappingConfiguration(propertyMapper);
+            return new MappingConfiguration(propertyMapper, resolvingStrategy);
         }
     }
 
     private final PropertyMapper propertyMapper;
+    private final ResolvingStrategy resolvingStrategy;
 
-    private MappingConfiguration(PropertyMapper propertyMapper) {
+    private MappingConfiguration(PropertyMapper propertyMapper, ResolvingStrategy resolvingStrategy) {
         this.propertyMapper = propertyMapper;
+        this.resolvingStrategy = resolvingStrategy;
     }
 
     /**
@@ -73,4 +87,13 @@ public class MappingConfiguration {
         return propertyMapper;
     }
 
+    /**
+     * Returns the {@link ResolvingStrategy}.
+     *
+     * @return the {@link ResolvingStrategy}.
+     */
+    public ResolvingStrategy getResolvingStrategy()
+    {
+        return resolvingStrategy;
+    }
 }

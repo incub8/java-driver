@@ -123,6 +123,7 @@ public class MappingManager {
                     Iterator<Mapper<?>> it = mappers.values().iterator();
                     while (it.hasNext()) {
                         Mapper<?> mapper = it.next();
+                        // TODO resolve conflict between "1 mapper per type" and "multiple TableMetaData behind each mapper"
                         if (mapper.getTableMetadata().equals(table)) {
                             LOGGER.error("Table {} has been removed; existing mappers for @Entity annotated {} will not work anymore", table.getName(), mapper.getMappedClass());
                             it.remove();
@@ -137,6 +138,7 @@ public class MappingManager {
                     Iterator<Mapper<?>> it = mappers.values().iterator();
                     while (it.hasNext()) {
                         Mapper<?> mapper = it.next();
+                        // TODO resolve conflict between "1 mapper per type" and "multiple TableMetaData behind each mapper"
                         if (mapper.getTableMetadata().equals(previous)) {
                             LOGGER.warn("Table {} has been altered; existing mappers for @Entity annotated {} might not work properly anymore",
                                     previous.getName(), mapper.getMappedClass());
@@ -267,12 +269,11 @@ public class MappingManager {
     }
 
     @SuppressWarnings("unchecked")
-    private <T> Mapper<T> getMapper(Class<T> klass) {
-        Mapper<T> mapper = (Mapper<T>) mappers.get(klass);
+    private <T> Mapper<T> getMapper(Class<T> entityClass) {
+        Mapper<T> mapper = (Mapper<T>) mappers.get(entityClass);
         if (mapper == null) {
-            EntityMapper<T> entityMapper = AnnotationParser.parseEntity(klass, this);
-            mapper = new Mapper<T>(this, klass, entityMapper);
-            Mapper<T> old = (Mapper<T>) mappers.putIfAbsent(klass, mapper);
+            mapper = new Mapper<T>(this, entityClass);
+            Mapper<T> old = (Mapper<T>) mappers.putIfAbsent(entityClass, mapper);
             if (old != null) {
                 mapper = old;
             }

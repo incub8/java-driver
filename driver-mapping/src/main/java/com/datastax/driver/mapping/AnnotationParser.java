@@ -36,6 +36,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 class AnnotationParser {
 
+    // TODO remove
     private static final Comparator<AliasedMappedProperty> POSITION_COMPARATOR = new Comparator<AliasedMappedProperty>() {
         @Override
         public int compare(AliasedMappedProperty o1, AliasedMappedProperty o2) {
@@ -46,6 +47,7 @@ class AnnotationParser {
     private AnnotationParser() {
     }
 
+    // TODO remove
     static <T> EntityMapper<T> parseEntity(final Class<T> entityClass, MappingManager mappingManager) {
         Table table = AnnotationChecks.getTypeAnnotation(Table.class, entityClass);
 
