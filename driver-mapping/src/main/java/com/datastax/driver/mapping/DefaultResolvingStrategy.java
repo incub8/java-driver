@@ -17,7 +17,7 @@ public class DefaultResolvingStrategy implements ResolvingStrategy
     };
 
     public <T> EntityMapper<T> resolveTable(Class<T> entityClass, MappingManager mappingManager, NamingStrategy namingStrategy) {
-        // TODO implement naming strategy support; update call sites
+        // TODO@i8 implement naming strategy support; update call sites
 
         Table table = AnnotationChecks.getTypeAnnotation(Table.class, entityClass);
 

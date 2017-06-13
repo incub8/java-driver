@@ -141,7 +141,7 @@ public class Mapper<T> {
 
     private EntityMapper<T> getEntityMapper() {
         ResolvingStrategy resolvingStrategy = manager.getConfiguration().getResolvingStrategy();
-        // TODO get a reference to a naming strategy from somewhere or turn it into a member of DefaultResolvingStrategy
+        // TODO@i8 get a reference to a naming strategy from somewhere or turn it into a member of DefaultResolvingStrategy
         return resolvingStrategy.resolveTable(getMappedClass(), manager, null);
     }
 
@@ -159,7 +159,7 @@ public class Mapper<T> {
      * @return the {@code TableMetadata} for this mapper or {@code null} if keyspace is not set.
      */
     public TableMetadata getTableMetadata() {
-        // TODO resolve conflict between "1 mapper per type" and "multiple TableMetaData behind each mapper"
+        // TODO@i8 resolve conflict between "1 mapper per type" and "multiple TableMetaData behind each mapper"
         throw new UnsupportedOperationException("design needs to be fixed");
     }
 
