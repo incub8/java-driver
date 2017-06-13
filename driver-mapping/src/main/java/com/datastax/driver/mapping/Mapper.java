@@ -141,8 +141,7 @@ public class Mapper<T> {
 
     private EntityMapper<T> getEntityMapper() {
         ResolvingStrategy resolvingStrategy = manager.getConfiguration().getResolvingStrategy();
-        // TODO@i8 get a reference to a naming strategy from somewhere or turn it into a member of DefaultResolvingStrategy
-        return resolvingStrategy.resolveTable(getMappedClass(), manager, null);
+        return resolvingStrategy.resolveTable(getMappedClass(), manager);
     }
 
     ListenableFuture<PreparedStatement> getPreparedQueryAsync(QueryType type, EnumMap<Option.Type, Option> options) {

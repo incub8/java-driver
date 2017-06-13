@@ -288,7 +288,7 @@ public class MapperInvalidAnnotationsTest {
     }
     
     private void parseEntity(Class<?> entityClass) {
-        new DefaultResolvingStrategy().resolveTable(entityClass, mappingManager, null);
+        new DefaultResolvingStrategy().resolveTable(entityClass, mappingManager);
     }
 
 }
