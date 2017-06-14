@@ -48,8 +48,8 @@ class AnnotationParser {
     static <T> EntityMapper<T> parseEntity(final Class<T> entityClass, MappingManager mappingManager) {
         ResolvingStrategy resolvingStrategy = mappingManager.getConfiguration().getResolvingStrategy();
         ObjectName objectName = resolvingStrategy.resolveTable(entityClass, mappingManager);
-        String ksName = objectName.keyspace;
-        String tableName = objectName.name;
+        String ksName = objectName.getKeyspace();
+        String tableName = objectName.getName();
 
         KeyspaceMetadata keyspaceMetadata = mappingManager.getSession().getCluster().getMetadata().getKeyspace(ksName);
         if (keyspaceMetadata == null)
@@ -116,8 +116,8 @@ class AnnotationParser {
     static <T> MappedUDTCodec<T> parseUDT(Class<T> udtClass, MappingManager mappingManager) {
         ResolvingStrategy resolvingStrategy = mappingManager.getConfiguration().getResolvingStrategy();
         ObjectName objectName = resolvingStrategy.resolveUDT(udtClass, mappingManager);
-        String ksName = objectName.keyspace;
-        String udtName = objectName.name;
+        String ksName = objectName.getKeyspace();
+        String udtName = objectName.getName();
 
         KeyspaceMetadata keyspaceMetadata = mappingManager.getSession().getCluster().getMetadata().getKeyspace(ksName);
         if (keyspaceMetadata == null)

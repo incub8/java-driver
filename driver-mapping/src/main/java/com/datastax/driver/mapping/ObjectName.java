@@ -18,13 +18,20 @@ package com.datastax.driver.mapping;
 import com.google.common.base.Strings;
 
 /**
- * TODO@i8 document this
+ * Represents the name of an object in a keyspace, e.g. a table or a user defined type.
  */
-public class ObjectName {
-    final String keyspace;
-    final String name;
+public final class ObjectName {
+    private final String keyspace;
+    private final String name;
 
-    ObjectName(String keyspace, String name) {
+    /**
+     * Creates a new object name.
+     *
+     * @param keyspace the name of the keyspace, must be a non-empty string
+     * @param name     the name of the object, must be a non-empty string
+     * @throws java.lang.IllegalArgumentException if one of the arguments is either null or empty
+     */
+    public ObjectName(String keyspace, String name) {
         if (Strings.isNullOrEmpty(keyspace)) {
             throw new IllegalArgumentException("Need non-null non-empty keyspace");
         }
@@ -34,5 +41,21 @@ public class ObjectName {
             throw new IllegalArgumentException("Need non-null non-empty name");
         }
         this.name = name;
+    }
+
+    /**
+     * Gets the keyspace name
+     * @return the keyspace name
+     */
+    public String getKeyspace() {
+        return keyspace;
+    }
+
+    /**
+     * Gets the object name
+     * @return the object name
+     */
+    public String getName() {
+        return name;
     }
 }

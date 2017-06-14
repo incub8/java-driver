@@ -285,6 +285,7 @@ public class MappingManager {
     <T> TypeCodec<T> getUDTCodec(Class<T> mappedClass) {
         MappedUDTCodec<T> codec = (MappedUDTCodec<T>) udtCodecs.get(mappedClass);
         if (codec == null) {
+            // TODO@i8 resolve conflict between "1 codec per class" and "UDT may be different in each keyspace"
             codec = AnnotationParser.parseUDT(mappedClass, this);
             session.getCluster().getConfiguration().getCodecRegistry().register(codec);
             MappedUDTCodec<T> old = (MappedUDTCodec<T>) udtCodecs.putIfAbsent(mappedClass, codec);
