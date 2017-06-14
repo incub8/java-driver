@@ -18,6 +18,7 @@ package com.datastax.driver.mapping;
 import com.datastax.driver.core.*;
 import com.datastax.driver.mapping.MethodMapper.ParamMapper;
 import com.datastax.driver.mapping.annotations.*;
+import com.google.common.base.Strings;
 import com.google.common.reflect.TypeToken;
 
 import java.lang.annotation.Annotation;
@@ -48,13 +49,22 @@ class AnnotationParser {
     static <T> EntityMapper<T> parseEntity(final Class<T> entityClass, MappingManager mappingManager) {
         ResolvingStrategy resolvingStrategy = mappingManager.getConfiguration().getResolvingStrategy();
         ObjectName objectName = resolvingStrategy.resolveTable(entityClass, mappingManager);
-        String ksName = objectName.getKeyspace();
-        String tableName = objectName.getName();
 
+        String ksName = objectName.getKeyspace();
+        if (Strings.isNullOrEmpty(ksName)) {
+            String loggedKeyspace = mappingManager.getSession().getLoggedKeyspace();
+            if (Strings.isNullOrEmpty(loggedKeyspace))
+                throw new IllegalArgumentException(String.format(
+                        "Error creating mapper for %s, the @Table annotation declares no default keyspace, and the session is not currently logged to any keyspace",
+                        entityClass
+                ));
+            ksName = Metadata.quote(loggedKeyspace);
+        }
         KeyspaceMetadata keyspaceMetadata = mappingManager.getSession().getCluster().getMetadata().getKeyspace(ksName);
         if (keyspaceMetadata == null)
             throw new IllegalArgumentException(String.format("Keyspace %s does not exist", ksName));
 
+        String tableName = objectName.getName();
         AbstractTableMetadata tableMetadata = keyspaceMetadata.getTable(tableName);
         if (tableMetadata == null) {
             tableMetadata = keyspaceMetadata.getMaterializedView(tableName);
@@ -116,13 +126,22 @@ class AnnotationParser {
     static <T> MappedUDTCodec<T> parseUDT(Class<T> udtClass, MappingManager mappingManager) {
         ResolvingStrategy resolvingStrategy = mappingManager.getConfiguration().getResolvingStrategy();
         ObjectName objectName = resolvingStrategy.resolveUDT(udtClass, mappingManager);
-        String ksName = objectName.getKeyspace();
-        String udtName = objectName.getName();
 
+        String ksName = objectName.getKeyspace();
+        if (Strings.isNullOrEmpty(ksName)) {
+            String loggedKeyspace = mappingManager.getSession().getLoggedKeyspace();
+            if (Strings.isNullOrEmpty(loggedKeyspace))
+                throw new IllegalArgumentException(String.format(
+                        "Error creating UDT codec for %s, the @UDT annotation declares no default keyspace, and the session is not currently logged to any keyspace",
+                        udtClass
+                ));
+            ksName = Metadata.quote(loggedKeyspace);
+        }
         KeyspaceMetadata keyspaceMetadata = mappingManager.getSession().getCluster().getMetadata().getKeyspace(ksName);
         if (keyspaceMetadata == null)
             throw new IllegalArgumentException(String.format("Keyspace %s does not exist", ksName));
 
+        String udtName = objectName.getName();
         UserType userType = keyspaceMetadata.getUserType(udtName);
         if (userType == null)
             throw new IllegalArgumentException(String.format("User type %s does not exist in keyspace %s", udtName, ksName));

@@ -18,7 +18,6 @@ package com.datastax.driver.mapping;
 import com.datastax.driver.core.Metadata;
 import com.datastax.driver.mapping.annotations.Table;
 import com.datastax.driver.mapping.annotations.UDT;
-import com.google.common.base.Strings;
 
 /**
  * TODO@i8 document this
@@ -27,22 +26,13 @@ public class DefaultResolvingStrategy implements ResolvingStrategy
 {
     public ObjectName resolveTable(Class<?> entityClass, MappingManager mappingManager) {
         // TODO@i8 implement naming strategy support (via field)
+        // look at com.datastax.driver.mapping.DefaultPropertyMapper.inferMappedName() for an example
+        // note that currently, the name of a table is a required field of the annotation
+        // choose a default naming strategy for tables/UDTs analogous to the default behavior for property names (where supplying a name in the annotation is optional)
 
         Table table = AnnotationChecks.getTypeAnnotation(Table.class, entityClass);
-
         String ksName = getKeyspace(table);
-        if (Strings.isNullOrEmpty(ksName)) {
-            String loggedKeyspace = mappingManager.getSession().getLoggedKeyspace();
-            if (Strings.isNullOrEmpty(loggedKeyspace))
-                throw new IllegalArgumentException(String.format(
-                        "Error creating mapper for %s, the @Table annotation declares no default keyspace, and the session is not currently logged to any keyspace",
-                        entityClass
-                ));
-            ksName = Metadata.quote(loggedKeyspace);
-        }
-
         String tableName = getTableName(table);
-
         return new ObjectName(ksName, tableName);
     }
 
@@ -69,15 +59,6 @@ public class DefaultResolvingStrategy implements ResolvingStrategy
         UDT udt = AnnotationChecks.getTypeAnnotation(UDT.class, udtClass);
 
         String ksName = getKeyspace(udt);
-        if (Strings.isNullOrEmpty(udt.keyspace())) {
-            String loggedKeyspace = mappingManager.getSession().getLoggedKeyspace();
-            if (Strings.isNullOrEmpty(loggedKeyspace))
-                throw new IllegalArgumentException(String.format(
-                        "Error creating UDT codec for %s, the @UDT annotation declares no default keyspace, and the session is not currently logged to any keyspace",
-                        udtClass
-                ));
-            ksName = Metadata.quote(loggedKeyspace);
-        }
 
         String udtName = getUDTName(udt);
 

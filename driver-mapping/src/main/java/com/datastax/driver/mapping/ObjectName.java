@@ -26,15 +26,15 @@ public final class ObjectName {
 
     /**
      * Creates a new object name.
+     * <p>
+     * Note that case-sensitive identifiers should be quoted with {@link com.datastax.driver.core.Metadata#quote} before
+     * creating an object name.
      *
-     * @param keyspace the name of the keyspace, must be a non-empty string
+     * @param keyspace the name of the keyspace. empty or null refer to the keyspace the session is logged to.
      * @param name     the name of the object, must be a non-empty string
-     * @throws java.lang.IllegalArgumentException if one of the arguments is either null or empty
+     * @throws java.lang.IllegalArgumentException if name is null or empty
      */
     public ObjectName(String keyspace, String name) {
-        if (Strings.isNullOrEmpty(keyspace)) {
-            throw new IllegalArgumentException("Need non-null non-empty keyspace");
-        }
         this.keyspace = keyspace;
 
         if (Strings.isNullOrEmpty(name)) {
@@ -53,7 +53,7 @@ public final class ObjectName {
 
     /**
      * Gets the object name
-     * @return the object name
+     * @return the object name, or null or empty string to use the keyspace the session is logged to.
      */
     public String getName() {
         return name;
