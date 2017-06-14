@@ -15,12 +15,24 @@
  */
 package com.datastax.driver.mapping;
 
+import com.google.common.base.Strings;
+
 /**
  * TODO@i8 document this
  */
-public interface ResolvingStrategy
-{
-    ObjectName resolveTable(Class<?> entityClass, MappingManager mappingManager);
+public class ObjectName {
+    final String keyspace;
+    final String name;
 
-    ObjectName resolveUDT(Class<?> udtClass, MappingManager mappingManager);
+    ObjectName(String keyspace, String name) {
+        if (Strings.isNullOrEmpty(keyspace)) {
+            throw new IllegalArgumentException("Need non-null non-empty keyspace");
+        }
+        this.keyspace = keyspace;
+
+        if (Strings.isNullOrEmpty(name)) {
+            throw new IllegalArgumentException("Need non-null non-empty name");
+        }
+        this.name = name;
+    }
 }

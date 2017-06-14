@@ -140,8 +140,7 @@ public class Mapper<T> {
     }
 
     private EntityMapper<T> getEntityMapper() {
-        ResolvingStrategy resolvingStrategy = manager.getConfiguration().getResolvingStrategy();
-        return resolvingStrategy.resolveTable(getMappedClass(), manager);
+        return AnnotationParser.parseEntity(getMappedClass(), manager);
     }
 
     ListenableFuture<PreparedStatement> getPreparedQueryAsync(QueryType type, EnumMap<Option.Type, Option> options) {

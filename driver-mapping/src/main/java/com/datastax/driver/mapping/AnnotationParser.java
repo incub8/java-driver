@@ -18,7 +18,6 @@ package com.datastax.driver.mapping;
 import com.datastax.driver.core.*;
 import com.datastax.driver.mapping.MethodMapper.ParamMapper;
 import com.datastax.driver.mapping.annotations.*;
-import com.google.common.base.Strings;
 import com.google.common.reflect.TypeToken;
 
 import java.lang.annotation.Annotation;
@@ -26,32 +25,99 @@ import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Static methods that facilitates parsing:
+ * - {@link #parseEntity(Class, MappingManager)}: entity classes into {@link EntityMapper} instances
  * - {@link #parseUDT(Class, MappingManager)}: UDT classes into {@link MappedUDTCodec} instances.
  * - {@link #parseAccessor(Class, MappingManager)}: Accessor interfaces into {@link AccessorMapper} instances.
  */
 class AnnotationParser {
 
+    private static final Comparator<AliasedMappedProperty> POSITION_COMPARATOR = new Comparator<AliasedMappedProperty>() {
+        @Override
+        public int compare(AliasedMappedProperty o1, AliasedMappedProperty o2) {
+            return o1.mappedProperty.getPosition() - o2.mappedProperty.getPosition();
+        }
+    };
+
     private AnnotationParser() {
     }
 
-    static <T> MappedUDTCodec<T> parseUDT(Class<T> udtClass, MappingManager mappingManager) {
-        UDT udt = AnnotationChecks.getTypeAnnotation(UDT.class, udtClass);
+    static <T> EntityMapper<T> parseEntity(final Class<T> entityClass, MappingManager mappingManager) {
+        ResolvingStrategy resolvingStrategy = mappingManager.getConfiguration().getResolvingStrategy();
+        ObjectName objectName = resolvingStrategy.resolveTable(entityClass, mappingManager);
+        String ksName = objectName.keyspace;
+        String tableName = objectName.name;
 
-        String ksName = udt.caseSensitiveKeyspace() ? Metadata.quote(udt.keyspace()) : udt.keyspace().toLowerCase();
-        String udtName = udt.caseSensitiveType() ? Metadata.quote(udt.name()) : udt.name().toLowerCase();
+        KeyspaceMetadata keyspaceMetadata = mappingManager.getSession().getCluster().getMetadata().getKeyspace(ksName);
+        if (keyspaceMetadata == null)
+            throw new IllegalArgumentException(String.format("Keyspace %s does not exist", ksName));
 
-        if (Strings.isNullOrEmpty(udt.keyspace())) {
-            String loggedKeyspace = mappingManager.getSession().getLoggedKeyspace();
-            if (Strings.isNullOrEmpty(loggedKeyspace))
-                throw new IllegalArgumentException(String.format(
-                        "Error creating UDT codec for %s, the @UDT annotation declares no default keyspace, and the session is not currently logged to any keyspace",
-                        udtClass
-                ));
-            ksName = Metadata.quote(loggedKeyspace);
+        AbstractTableMetadata tableMetadata = keyspaceMetadata.getTable(tableName);
+        if (tableMetadata == null) {
+            tableMetadata = keyspaceMetadata.getMaterializedView(tableName);
+            if (tableMetadata == null)
+                throw new IllegalArgumentException(String.format("Table or materialized view %s does not exist in keyspace %s", tableName, ksName));
         }
+
+        Table table = AnnotationChecks.getTypeAnnotation(Table.class, entityClass);
+        ConsistencyLevel writeConsistency = table.writeConsistency().isEmpty() ? null : ConsistencyLevel.valueOf(table.writeConsistency().toUpperCase());
+        ConsistencyLevel readConsistency = table.readConsistency().isEmpty() ? null : ConsistencyLevel.valueOf(table.readConsistency().toUpperCase());
+
+        EntityMapper<T> mapper = new EntityMapper<T>(entityClass, ksName, tableName, writeConsistency, readConsistency);
+
+        List<AliasedMappedProperty> pks = new ArrayList<AliasedMappedProperty>();
+        List<AliasedMappedProperty> ccs = new ArrayList<AliasedMappedProperty>();
+        List<AliasedMappedProperty> rgs = new ArrayList<AliasedMappedProperty>();
+
+        MappingConfiguration configuration = mappingManager.getConfiguration();
+        Set<? extends MappedProperty<?>> properties = configuration.getPropertyMapper().mapTable(entityClass);
+        AtomicInteger columnCounter = mappingManager.protocolVersionAsInt == 1 ? null : new AtomicInteger(0);
+
+        for (MappedProperty<?> mappedProperty : properties) {
+
+            String alias = (columnCounter != null)
+                    ? "col" + columnCounter.incrementAndGet()
+                    : null;
+
+            AliasedMappedProperty aliasedMappedProperty = new AliasedMappedProperty(mappedProperty, alias);
+
+            if (mappingManager.protocolVersionAsInt == 1 && mappedProperty.isComputed())
+                throw new UnsupportedOperationException("Computed properties are not supported with native protocol v1");
+
+            if (!mappedProperty.isComputed() && tableMetadata.getColumn(mappedProperty.getMappedName()) == null)
+                throw new IllegalArgumentException(String.format("Column %s does not exist in table %s.%s",
+                        mappedProperty.getMappedName(), ksName, tableName));
+
+            if (mappedProperty.isPartitionKey())
+                pks.add(aliasedMappedProperty);
+            else if (mappedProperty.isClusteringColumn())
+                ccs.add(aliasedMappedProperty);
+            else
+                rgs.add(aliasedMappedProperty);
+
+            // if the property is of a UDT type, parse it now
+            for (Class<?> udt : TypeMappings.findUDTs(mappedProperty.getPropertyType().getType()))
+                mappingManager.getUDTCodec(udt);
+        }
+
+        Collections.sort(pks, POSITION_COMPARATOR);
+        Collections.sort(ccs, POSITION_COMPARATOR);
+
+        AnnotationChecks.validateOrder(pks, "@PartitionKey");
+        AnnotationChecks.validateOrder(ccs, "@ClusteringColumn");
+
+        mapper.addColumns(pks, ccs, rgs);
+        return mapper;
+    }
+
+    static <T> MappedUDTCodec<T> parseUDT(Class<T> udtClass, MappingManager mappingManager) {
+        ResolvingStrategy resolvingStrategy = mappingManager.getConfiguration().getResolvingStrategy();
+        ObjectName objectName = resolvingStrategy.resolveUDT(udtClass, mappingManager);
+        String ksName = objectName.keyspace;
+        String udtName = objectName.name;
 
         KeyspaceMetadata keyspaceMetadata = mappingManager.getSession().getCluster().getMetadata().getKeyspace(ksName);
         if (keyspaceMetadata == null)
